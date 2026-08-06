@@ -47,6 +47,8 @@ struct ContentView: View {
                     if !engine.isRunning {
                         if !engine.osSupported {
                             osRequirement.cascadeItem(3)
+                        } else if !engine.automaticPairingSupported, engine.needsFreshPairing {
+                            pairingImportRequirement.cascadeItem(3)
                         } else if !engine.wifiConnected, engine.needsFreshPairing {
                             wifiRequirement.cascadeItem(3)
                         } else if !engine.vpnConnected {
@@ -378,6 +380,24 @@ struct ContentView: View {
                     Text(L("Wi-Fi required"))
                         .font(.subheadline.weight(.semibold))
                     Text(L("Connect to a Wi-Fi network. Pairing this iPhone needs it — SideInstaller has to be findable on the local network."))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    private var pairingImportRequirement: some View {
+        CalloutCard(tint: .orange) {
+            HStack(alignment: .top, spacing: 14) {
+                Image(systemName: "lock.doc")
+                    .font(.title2)
+                    .foregroundStyle(.orange)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(L("Pairing file required"))
+                        .font(.subheadline.weight(.semibold))
+                    Text(L("On iOS 17.4 through 26, open the Pairing tab and import an RPPairing file generated for this device. Automatic on-device pairing is available on iOS 27 and later."))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)

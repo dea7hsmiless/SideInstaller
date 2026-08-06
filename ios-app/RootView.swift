@@ -24,17 +24,7 @@ struct RootView: View {
     @State private var twoFactorCode = ""
 
     var body: some View {
-        TabView {
-            Tab(L("Install"), systemImage: "square.and.arrow.down") {
-                ContentView()
-            }
-            Tab(L("Pairing"), systemImage: "lock.iphone") {
-                PairingView(manager: pairingManager)
-            }
-            Tab(L("Certificates"), systemImage: "checkmark.seal") {
-                CertsView(manager: certManager)
-            }
-        }
+        compatibleTabs
         .tint(Theme.accent)
         .preferredColorScheme(.dark)
         .alert(L("Two-Factor Code"), isPresented: $engine.pendingTwoFactor) {
@@ -44,6 +34,23 @@ struct RootView: View {
             Button(L("Cancel"), role: .cancel) { engine.cancelTwoFactor(); twoFactorCode = "" }
         } message: {
             Text(L("Enter the code Apple just sent to your trusted device."))
+        }
+    }
+
+    @ViewBuilder
+    private var compatibleTabs: some View {
+        if #available(iOS 18.0, *) {
+            TabView {
+                Tab(L("Install"), systemImage: "square.and.arrow.down") { ContentView() }
+                Tab(L("Pairing"), systemImage: "lock.iphone") { PairingView(manager: pairingManager) }
+                Tab(L("Certificates"), systemImage: "checkmark.seal") { CertsView(manager: certManager) }
+            }
+        } else {
+            TabView {
+                ContentView().tabItem { Label(L("Install"), systemImage: "square.and.arrow.down") }
+                PairingView(manager: pairingManager).tabItem { Label(L("Pairing"), systemImage: "lock.iphone") }
+                CertsView(manager: certManager).tabItem { Label(L("Certificates"), systemImage: "checkmark.seal") }
+            }
         }
     }
 }

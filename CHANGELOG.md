@@ -2,6 +2,15 @@
 
 All notable changes to SideInstaller are documented here.
 
+## Unreleased
+
+### Added
+- **iOS and iPadOS 17.4-26 compatibility.** Older systems can import an
+  externally generated RPPairing plist from the Pairing tab and use the same
+  on-device signing and installation pipeline. iOS 27 keeps automatic pairing.
+- Compatibility fallbacks for the pre-iOS 18 tab/background UI and pre-iOS 26
+  status styling.
+
 ## 0.7.0
 
 ### Added

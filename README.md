@@ -4,7 +4,7 @@
 
 # SideInstaller
 
-**Install SideStore and LiveContainer directly on your iPhone. No PC required.**
+**Install SideStore and LiveContainer directly on your iPhone or iPad.**
 
 [![Install](https://img.shields.io/badge/Install-SideInstaller-2ea44f?style=for-the-badge)](https://frizzlem.github.io/SideInstaller/)
 [![Version](https://img.shields.io/badge/version-0.7.0-blue?style=for-the-badge)](CHANGELOG.md)
@@ -54,7 +54,10 @@ anyone to read, audit, or contribute to, so you can see exactly what's running o
 
 ## Requirements
 
-- An iPhone or iPad on iOS 27
+- An iPhone or iPad on iOS/iPadOS 17.4 or later
+- iOS/iPadOS 27 or later for fully on-device automatic pairing
+- On iOS/iPadOS 17.4 through 26, an RPPairing file generated for that device by
+  a compatible pairing tool, imported from SideInstaller's **Pairing** tab
 - Wi-Fi (first time only)
 - Your Apple account credentials (not collected)
 
@@ -65,10 +68,11 @@ anyone to read, audit, or contribute to, so you can see exactly what's running o
 2. Open [the official install page](https://frizzlem.github.io/SideInstaller/) and install the app using any
    of the certificates.
 3. Once it's installed, open it.
-4. Log in with your Apple account credentials.
-5. Tap **Install SideStore** or **Install SideStore + LiveContainer**.
-6. Wait while your selection installs.
-7. That's it. No PC and no extra steps required.
+4. On iOS/iPadOS 17.4 through 26, open **Pairing** and import the device's
+   RPPairing plist. iOS/iPadOS 27 and later can pair automatically.
+5. Log in with your Apple account credentials.
+6. Tap **Install SideStore** or **Install SideStore + LiveContainer**.
+7. Wait while your selection installs.
 
 
 ## Is SideInstaller safe?

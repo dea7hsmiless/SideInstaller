@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 
 /// The "Pairing" tab — manage the device pairing file on its own, the way
 /// iLoader's "Manage Pairing files" does. Generate (extract) the pairing file,
@@ -12,6 +13,7 @@ struct PairingView: View {
     @ObservedObject var manager: PairingManager
 
     @State private var showSettings = false
+    @State private var showPairingImporter = false
 
     var body: some View {
         NavigationStack {
@@ -49,6 +51,12 @@ struct PairingView: View {
             .background(AppBackground())
             .toolbar { settingsToolbarItem(isPresented: $showSettings) }
             .sheet(isPresented: $showSettings) { SettingsView() }
+            .fileImporter(isPresented: $showPairingImporter,
+                          allowedContentTypes: [.propertyList, .data]) { result in
+                if case let .success(url) = result {
+                    manager.importPairingFile(from: url)
+                }
+            }
         }
         .onAppear { manager.refresh() }
     }
@@ -86,7 +94,8 @@ struct PairingView: View {
             VStack(alignment: .leading, spacing: 14) {
                 sectionTitle(L("Pairing file"), systemImage: "lock.doc.fill")
 
-                Button { manager.generate() } label: {
+                if engine.automaticPairingSupported {
+                    Button { manager.generate() } label: {
                     HStack(spacing: 10) {
                         if manager.isGenerating {
                             ProgressView().tint(.white)
@@ -97,8 +106,24 @@ struct PairingView: View {
                             Text(manager.pairingFileExists ? L("Regenerate") : L("Generate pairing file"))
                         }
                     }
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+                    .disabled(manager.isBusy || engine.isRunning)
+                } else {
+                    Text(L("iOS 17.4 through 26 requires an RPPairing file generated for this device by another compatible pairing tool."))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .buttonStyle(PrimaryButtonStyle())
+
+                Button { showPairingImporter = true } label: {
+                    Label(manager.pairingFileExists ? L("Replace pairing file") : L("Import pairing file"),
+                          systemImage: "square.and.arrow.down")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .tint(Theme.accent)
                 .disabled(manager.isBusy || engine.isRunning)
 
                 if let url = manager.exportURL {

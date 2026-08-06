@@ -32,7 +32,22 @@ enum Theme {
 /// blue blooms breathe and flow, while the dark corners and low overall opacity
 /// over pure black keep the app firmly dark-themed.
 struct AppBackground: View {
+    @ViewBuilder
     var body: some View {
+        if #available(iOS 18.0, *) {
+            modernBackground
+        } else {
+            ZStack {
+                Color.black
+                RadialGradient(colors: [Theme.accent.opacity(0.28), Theme.glow.opacity(0.08), .black],
+                               center: .center, startRadius: 20, endRadius: 520)
+            }
+            .ignoresSafeArea()
+        }
+    }
+
+    @available(iOS 18.0, *)
+    private var modernBackground: some View {
         // `TimelineView(.animation)` ticks every frame; the mesh points are derived
         // from the clock so the motion is smooth and continuous (no keyframe reset).
         TimelineView(.animation) { timeline in
@@ -140,7 +155,7 @@ struct StatusPill: View {
             .foregroundStyle(color)
             .padding(.horizontal, 12)
             .padding(.vertical, 7)
-        if glass {
+        if glass, #available(iOS 26.0, *) {
             label.glassEffect(.regular, in: Capsule())
         } else {
             label.background(Capsule().fill(color.opacity(0.16)))

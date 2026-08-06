@@ -123,18 +123,24 @@ final class Engine: ObservableObject {
     @Published var vpnStatus: String = "unknown"
     @Published var wifiStatus: String = "unknown"
 
-    /// Lowest iOS the install pipeline supports. The on-device pairing service
-    /// and the loopback tunnel it drives only exist from this release on, so an
-    /// older iPhone is gated off up front rather than failing mid-run.
-    static let minimumOSMajorVersion = 27
+    /// Lowest iOS with the RSD transport used by the install pipeline.
+    static let minimumOSMajorVersion = 17
+    static let minimumOSMinorVersion = 4
     /// The same number as text, for interpolation into UI copy.
-    static var minimumOSText: String { "\(minimumOSMajorVersion)" }
+    static var minimumOSText: String { "\(minimumOSMajorVersion).\(minimumOSMinorVersion)" }
+
+    /// Device-initiated Pairable Host pairing is new in iOS 27. Older systems
+    /// can use the rest of the pipeline after importing an RPPairing file.
+    var automaticPairingSupported: Bool {
+        ProcessInfo.processInfo.isOperatingSystemAtLeast(
+            OperatingSystemVersion(majorVersion: 27, minorVersion: 0, patchVersion: 0))
+    }
 
     /// False when this iPhone is older than `minimumOSMajorVersion`.
     var osSupported: Bool {
         ProcessInfo.processInfo.isOperatingSystemAtLeast(
             OperatingSystemVersion(majorVersion: Engine.minimumOSMajorVersion,
-                                   minorVersion: 0, patchVersion: 0))
+                                   minorVersion: Engine.minimumOSMinorVersion, patchVersion: 0))
     }
 
     /// This iPhone's iOS version, e.g. "18.5" — named in the callout so the
@@ -403,6 +409,10 @@ final class Engine: ObservableObject {
             log("⛔️ iOS \(osVersionText) isn't supported — SideInstaller needs iOS \(Engine.minimumOSText) or later.")
             return
         }
+        guard automaticPairingSupported || !needsFreshPairing else {
+            log("⛔️ iOS \(osVersionText) needs an imported RPPairing file. Open Pairing and import one first.")
+            return
+        }
         guard !normalizedAppleID.isEmpty, !applePassword.isEmpty else {
             log("Enter your Apple ID email + password first.")
             return
@@ -548,6 +558,9 @@ final class Engine: ObservableObject {
             // A reused pairing file can be stale (re-paired device, old file).
             // Pair fresh once, then retry the connection.
             guard reused else { throw error }
+            guard automaticPairingSupported else {
+                throw EngineError.message(L("The imported pairing file did not work with this device. Generate a fresh RPPairing file for this iPhone or iPad, then import it from the Pairing tab."))
+            }
             log("Saved pairing didn't work (\(short(error))). Pairing fresh…")
             try await pair()
             try await connect()
@@ -556,6 +569,9 @@ final class Engine: ObservableObject {
 
     @MainActor
     private func pair() async throws {
+        guard automaticPairingSupported else {
+            throw EngineError.message(L("Automatic pairing requires iOS 27. On iOS 17.4 through 26, import an RPPairing file from the Pairing tab first."))
+        }
         setStep(.pair, .waiting)
         setGuide(Guides.pairing)
         log("Pairing: starting on-device pairing service…")

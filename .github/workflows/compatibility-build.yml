@@ -1,0 +1,47 @@
+name: compatibility-build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Install build tools
+        run: |
+          brew install xcodegen
+          rustup target add aarch64-apple-ios aarch64-apple-ios-sim
+
+      - name: Build Rust framework
+        env:
+          DEVELOPER_DIR: ${{ env.DEVELOPER_DIR }}
+          IPHONEOS_DEPLOYMENT_TARGET: "17.4"
+        run: |
+          chmod +x build-rust.sh
+          ./build-rust.sh
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Verify iOS 17.4 deployment build
+        run: |
+          xcodebuild build \
+            -project SideInstaller.xcodeproj \
+            -scheme SideInstaller \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            IPHONEOS_DEPLOYMENT_TARGET=17.4 \
+            CODE_SIGNING_ALLOWED=NO

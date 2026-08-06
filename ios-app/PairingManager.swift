@@ -54,6 +54,51 @@ final class PairingManager: ObservableObject {
         pairingFileDate = attrs?[.modificationDate] as? Date
     }
 
+    /// Install an RPPairing plist supplied through Files. This is the pairing
+    /// entry point on iOS 17.4-26, where the device cannot initiate Pairable
+    /// Host pairing itself. The source is validated as a non-empty plist and
+    /// copied atomically into the app's private store.
+    func importPairingFile(from source: URL) {
+        guard !isBusy else { return }
+        lastError = nil
+        lastSuccess = nil
+
+        let accessed = source.startAccessingSecurityScopedResource()
+        defer { if accessed { source.stopAccessingSecurityScopedResource() } }
+
+        do {
+            let data = try Data(contentsOf: source)
+            guard !data.isEmpty else {
+                throw ImportError.empty
+            }
+            guard (try PropertyListSerialization.propertyList(from: data, options: [], format: nil)) is [String: Any] else {
+                throw ImportError.invalidPlist
+            }
+
+            let destination = URL(fileURLWithPath: PairingController.pairingFilePath())
+            try FileManager.default.createDirectory(
+                at: destination.deletingLastPathComponent(),
+                withIntermediateDirectories: true)
+            let temporary = destination.deletingLastPathComponent()
+                .appendingPathComponent(".pairing-import-\(UUID().uuidString).plist")
+            try data.write(to: temporary, options: .atomic)
+            if FileManager.default.fileExists(atPath: destination.path) {
+                _ = try FileManager.default.replaceItemAt(destination, withItemAt: temporary)
+            } else {
+                try FileManager.default.moveItem(at: temporary, to: destination)
+            }
+
+            engine.pairingFilePath = destination.path
+            engine.connection.disconnect()
+            targets = []
+            hasScanned = false
+            lastSuccess = L("Pairing file imported. Turn on the loopback VPN, then scan or install.")
+        } catch {
+            lastError = message(error)
+        }
+        refresh()
+    }
+
     /// Run the RPPairing host to extract a fresh pairing file. Surfaces the PIN
     /// through `Engine.pairingPIN` (shown by the tab) while the user pairs in
     /// Settings. A re-pair invalidates any open device link, so drop it.
@@ -121,5 +166,17 @@ final class PairingManager: ObservableObject {
 
     private func message(_ error: Error) -> String {
         (error as? LocalizedError)?.errorDescription ?? String(describing: error)
+    }
+
+    private enum ImportError: LocalizedError {
+        case empty
+        case invalidPlist
+
+        var errorDescription: String? {
+            switch self {
+            case .empty: return L("The selected pairing file is empty.")
+            case .invalidPlist: return L("The selected file is not a valid RPPairing property list.")
+            }
+        }
     }
 }
