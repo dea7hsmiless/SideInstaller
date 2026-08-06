@@ -20,6 +20,9 @@ jobs:
         with:
           xcode-version: latest-stable
 
+      - name: Export selected Xcode path
+        run: echo "DEVELOPER_DIR=$(xcode-select -p)" >> "$GITHUB_ENV"
+
       - name: Install build tools
         run: |
           brew install xcodegen
@@ -27,7 +30,6 @@ jobs:
 
       - name: Build Rust framework
         env:
-          DEVELOPER_DIR: ${{ env.DEVELOPER_DIR }}
           IPHONEOS_DEPLOYMENT_TARGET: "17.4"
         run: |
           chmod +x build-rust.sh
